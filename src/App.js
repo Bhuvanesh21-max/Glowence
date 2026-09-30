@@ -1,15 +1,13 @@
 import React, { useState, useEffect } from 'react';
 
 const App = () => {
-  // Navigation & Role State
   const [currentView, setCurrentView] = useState('home'); 
-  const [userRole, setUserRole] = useState('guest'); // 'guest', 'customer', 'admin'
+  const [userRole, setUserRole] = useState('guest'); 
   const [customerInfo, setCustomerInfo] = useState(null);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [adminPassword, setAdminPassword] = useState('1234');
 
-  // Dynamic Products State (Catalog)
   const [products, setProducts] = useState([
     { 
       id: 1, 
@@ -17,9 +15,7 @@ const App = () => {
       price: "₹1", 
       description: "A breathtaking modern chandelier featuring brushed brass and LED crystal rings. Perfect for high ceilings and modern dining rooms.",
       image: "https://images.unsplash.com/photo-1565814329452-e1efa11c5b89?auto=format&fit=crop&w=400&q=80",
-      reviews: [
-        { id: 101, author: "Rajesh K.", text: "Absolutely stunning! Changes the whole look of my living room." }
-      ]
+      reviews: [{ id: 101, author: "Rajesh K.", text: "Absolutely stunning! Changes the whole look of my living room." }]
     },
     { 
       id: 2, 
@@ -39,7 +35,6 @@ const App = () => {
     }
   ]);
 
-  // Orders State
   const [orders, setOrders] = useState([
     {
       orderId: 'GLW-847291',
@@ -52,36 +47,35 @@ const App = () => {
     }
   ]);
 
-  // Admin Dashboard State - Products
   const [productName, setProductName] = useState('');
   const [productPrice, setProductPrice] = useState('');
   const [productDescription, setProductDescription] = useState('');
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
 
-  // Customer Review State
   const [reviewAuthor, setReviewAuthor] = useState('');
   const [reviewText, setReviewText] = useState('');
 
-  // Payment Gateway State
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState('idle'); 
   const [paymentMethod, setPaymentMethod] = useState('upi'); 
+  const [selectedUpiApp, setSelectedUpiApp] = useState('gpay'); 
 
   // --- BACKEND API SYNCHRONIZATION ---
+  const BACKEND_URL = 'https://glowence-backend.onrender.com';
+
   useEffect(() => {
-    fetch('https://glowence-backend.onrender.com/api/products')
+    fetch(`${BACKEND_URL}/api/products`)
       .then(res => res.json())
       .then(data => { if (data.length > 0) setProducts(data); })
       .catch(err => console.log('Error fetching products:', err));
 
-    fetch('https://glowence-backend.onrender.com/api/orders')
+    fetch(`${BACKEND_URL}/api/orders`)
       .then(res => res.json())
       .then(data => { if (data.length > 0) setOrders(data); })
       .catch(err => console.log('Error fetching orders:', err));
   }, []);
 
-  // --- AUTHENTICATION ---
   const handleAdminLogin = () => {
     const password = window.prompt(`Admin Access: Enter password (hint: ${adminPassword})`);
     if (password === adminPassword) {
@@ -106,7 +100,6 @@ const App = () => {
     setCurrentView('home');
   };
 
-  // --- ADMIN FUNCTIONS ---
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -125,7 +118,7 @@ const App = () => {
     formData.append('description', productDescription);
     formData.append('image', imageFile);
 
-    fetch('https://glowence-backend.onrender.com/api/products', {
+    fetch(`${BACKEND_URL}/api/products`, {
       method: 'POST',
       body: formData
     })
@@ -144,10 +137,7 @@ const App = () => {
 
   const handleDeleteProduct = (productId) => {
     if (window.confirm("Are you sure you want to delete this product?")) {
-      fetch(`https://glowence-backend.onrender.com/api/products/${productId}`, {
-        method: 'DELETE'
-      })
-      .then(res => res.json())
+      fetch(`${BACKEND_URL}/api/products/${productId}`, { method: 'DELETE' })
       .then(() => {
         setProducts(products.filter(p => p.id !== productId));
         alert("Product deleted successfully.");
@@ -159,12 +149,11 @@ const App = () => {
   const handleUpdatePrice = (productId) => {
     const newPrice = window.prompt("Enter new price:");
     if (newPrice) {
-      fetch(`https://glowence-backend.onrender.com/api/products/${productId}`, {
+      fetch(`${BACKEND_URL}/api/products/${productId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ price: newPrice })
       })
-      .then(res => res.json())
       .then(() => {
         setProducts(products.map(p => p.id === productId ? { ...p, price: newPrice } : p));
         alert("Product price updated successfully.");
@@ -181,7 +170,6 @@ const App = () => {
     }
   };
 
-  // --- CUSTOMER FUNCTIONS ---
   const handleReviewSubmit = (e) => {
     e.preventDefault();
     const newReview = { id: Date.now(), author: reviewAuthor, text: reviewText };
@@ -204,7 +192,6 @@ const App = () => {
     window.scrollTo(0, 0);
   };
 
-  // --- PAYMENT & ORDER CREATION ---
   const handleBuyClick = () => {
     if (userRole === 'guest') {
       alert("Please login or create an account to place an order.");
@@ -228,7 +215,7 @@ const App = () => {
       customer: customerInfo?.name || 'guest'
     };
 
-    fetch('https://glowence-backend.onrender.com/api/orders', {
+    fetch(`${BACKEND_URL}/api/orders`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(newOrder)
@@ -238,6 +225,7 @@ const App = () => {
       const numericAmount = selectedProduct.price.replace(/[^0-9.]/g, '');
       const merchantUpiId = "sabeesh@upi"; 
       const merchantName = "Glowence Lighting";
+      // Opens UPI apps (GPay / PhonePe / Paytm deep link)
       window.location.href = `upi://pay?pa=${merchantUpiId}&pn=${encodeURIComponent(merchantName)}&am=${numericAmount}&cu=INR`;
     }
     
@@ -251,29 +239,24 @@ const App = () => {
         setPaymentMethod('upi');
         setCurrentView('orders');
       }, 1500);
-    }, 4000);
+    }, 3000);
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-r from-[#1a1a24] via-[#2a2a35] to-[#4a4a55] text-[#E0E0E0] font-['Inter'] relative">
-      
-      {/* --- TOP NAVIGATION --- */}
       <nav className="flex flex-col md:flex-row justify-between items-center p-4 sm:p-6 max-w-7xl mx-auto border-b border-gray-700 gap-4 md:gap-0">
         <div className="flex items-center gap-2 cursor-pointer" onClick={() => setCurrentView('home')}>
           <img src="/logo.png" alt="Glowence Logo" className="w-10 h-10 object-contain" />
           <h1 className="text-2xl font-bold font-['Poppins'] text-white tracking-wider">GLOWENCE</h1>
         </div>
-        
         <div className="flex flex-wrap justify-center items-center gap-2 sm:gap-4 mt-2 sm:mt-0">
           <button onClick={() => setCurrentView('home')} className={`px-3 py-1.5 text-sm font-medium rounded transition-colors ${currentView === 'home' ? 'bg-[#FFC107] text-black' : 'text-gray-300 hover:text-white'}`}>Home</button>
           <button onClick={() => setCurrentView('catalog')} className={`px-3 py-1.5 text-sm font-medium rounded transition-colors ${currentView === 'catalog' ? 'bg-[#FFC107] text-black' : 'text-gray-300 hover:text-white'}`}>Catalog</button>
           <button onClick={() => setCurrentView('orders')} className={`px-3 py-1.5 text-sm font-medium rounded transition-colors ${currentView === 'orders' || currentView === 'tracking' ? 'bg-[#FFC107] text-black' : 'text-gray-300 hover:text-white'}`}>Orders</button>
           <button onClick={() => setCurrentView('about')} className={`px-3 py-1.5 text-sm font-medium rounded transition-colors ${currentView === 'about' ? 'bg-[#FFC107] text-black' : 'text-gray-300 hover:text-white'}`}>About Us</button>
-          
           {userRole === 'admin' && (
             <button onClick={() => setCurrentView('admin')} className={`px-3 py-1.5 text-sm font-medium rounded transition-colors ${currentView === 'admin' ? 'bg-[#FFC107] text-black' : 'border border-[#FFC107] text-[#FFC107]'}`}>Admin Panel</button>
           )}
-          
           <div className="border-l border-gray-600 pl-4 ml-2 flex flex-wrap gap-2">
             {userRole === 'guest' ? (
               <>
@@ -287,31 +270,22 @@ const App = () => {
         </div>
       </nav>
 
-      {/* Main Content Area */}
       <main className="p-4 sm:p-8 max-w-7xl mx-auto">
-        
-        {/* --- VIEW: HOME --- */}
         {currentView === 'home' && (
           <div className="flex flex-col items-center justify-center text-center mt-10 sm:mt-20">
             <h1 className="text-4xl sm:text-6xl font-bold font-['Poppins'] text-white mb-6">Glowence On Your Space</h1>
             <p className="text-lg text-gray-300 max-w-2xl mb-10">Discover our exclusive collection of modern lighting solutions designed to transform your home into a masterpiece</p>
-            <button onClick={() => setCurrentView('catalog')} className="bg-[#FFC107] text-black font-bold text-lg px-8 py-4 rounded-full shadow-[0_0_20px_rgba(255,193,7,0.4)] hover:scale-105 transition-transform">
-              Shop the Catalog
-            </button>
+            <button onClick={() => setCurrentView('catalog')} className="bg-[#FFC107] text-black font-bold text-lg px-8 py-4 rounded-full shadow-[0_0_20px_rgba(255,193,7,0.4)] hover:scale-105 transition-transform">Shop the Catalog</button>
           </div>
         )}
 
-        {/* --- VIEW: ABOUT US --- */}
         {currentView === 'about' && (
           <div className="max-w-4xl mx-auto mt-8 bg-[#2a2a35] p-8 rounded-xl shadow-lg border border-gray-700">
             <h2 className="text-3xl font-bold font-['Poppins'] text-white mb-6">About Glowence</h2>
-            <p className="text-gray-300 leading-relaxed mb-4">
-              Founded in 2026, Glowence Lighting is dedicated to bringing world-class, contemporary lighting fixtures right to your doorstep. We believe that lighting isn't just functional—it is the soul of interior design.
-            </p>
+            <p className="text-gray-300 leading-relaxed">Founded in 2026, Glowence Lighting is dedicated to bringing world-class, contemporary lighting fixtures right to your doorstep.</p>
           </div>
         )}
 
-        {/* --- VIEW: ACCOUNT / LOGIN --- */}
         {currentView === 'account' && (
           <div className="max-w-md mx-auto mt-10 bg-[#2a2a35] p-8 rounded-xl shadow-lg border border-gray-700">
             <h2 className="text-2xl font-bold font-['Poppins'] text-white mb-6 text-center">Customer Login</h2>
@@ -329,7 +303,6 @@ const App = () => {
           </div>
         )}
 
-        {/* --- VIEW: CATALOG --- */}
         {currentView === 'catalog' && (
           <div>
             <h2 className="text-3xl sm:text-4xl font-['Poppins'] font-bold text-white mb-8 sm:mb-10 text-center mt-4 sm:mt-8">Full Catalog</h2>
@@ -337,7 +310,7 @@ const App = () => {
               {products.map((product) => (
                 <div key={product.id} onClick={() => viewProduct(product)} className="bg-black bg-opacity-20 rounded-lg overflow-hidden border border-gray-700 group cursor-pointer hover:border-[#FFC107] transition-all duration-300 flex flex-col">
                   <div className="h-56 overflow-hidden relative">
-                    <img src={`https://glowence-backend.onrender.com${product.image}`} alt={product.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                    <img src={product.image.startsWith('http') ? product.image : `${BACKEND_URL}${product.image}`} alt={product.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                   </div>
                   <div className="p-4 text-center flex-1 flex flex-col justify-between">
                     <h4 className="text-sm font-['Poppins'] font-semibold text-gray-200">{product.name}</h4>
@@ -352,13 +325,12 @@ const App = () => {
           </div>
         )}
 
-        {/* --- VIEW: PRODUCT DETAILS --- */}
         {currentView === 'product' && selectedProduct && (
           <div className="max-w-4xl mx-auto mt-4 sm:mt-8">
             <button onClick={() => setCurrentView('catalog')} className="text-gray-400 hover:text-white mb-6 flex items-center gap-2">← Back to Catalog</button>
             <div className="bg-[#2a2a35] rounded-xl overflow-hidden shadow-lg border border-gray-700 flex flex-col md:flex-row">
               <div className="md:w-1/2">
-                <img src={`https://glowence-backend.onrender.com${selectedProduct.image}`} alt={selectedProduct.name} className="w-full h-full object-cover min-h-[300px]" />
+                <img src={selectedProduct.image.startsWith('http') ? selectedProduct.image : `${BACKEND_URL}${selectedProduct.image}`} alt={selectedProduct.name} className="w-full h-full object-cover min-h-[300px]" />
               </div>
               <div className="md:w-1/2 p-6 sm:p-8 flex flex-col justify-between">
                 <div>
@@ -374,7 +346,6 @@ const App = () => {
               </div>
             </div>
 
-            {/* Customer Reviews */}
             <div className="mt-8 sm:mt-12 bg-[#1e1e28] p-6 sm:p-8 rounded-xl border border-gray-700">
               <h3 className="text-xl sm:text-2xl font-bold font-['Poppins'] text-white mb-6">Customer Reviews</h3>
               <div className="space-y-4 mb-10">
@@ -398,7 +369,6 @@ const App = () => {
           </div>
         )}
 
-        {/* --- VIEW: MY ORDERS --- */}
         {currentView === 'orders' && (
           <div className="max-w-4xl mx-auto mt-4 sm:mt-8">
             <h2 className="text-2xl sm:text-3xl font-bold font-['Poppins'] text-white mb-6 sm:mb-8">My Orders</h2>
@@ -408,9 +378,12 @@ const App = () => {
               <div className="space-y-6">
                 {orders.map((order, idx) => (
                   <div key={idx} className="bg-[#2a2a35] p-4 sm:p-6 rounded-xl border border-gray-700 flex justify-between items-center">
-                    <div>
-                      <h3 className="text-lg font-bold text-white">{order.product.name}</h3>
-                      <p className="text-gray-400 text-sm">ID: {order.orderId} • {order.date}</p>
+                    <div className="flex items-center gap-4">
+                      <img src={order.product?.image?.startsWith('http') ? order.product.image : `${BACKEND_URL}${order.product?.image}`} alt="" className="w-12 h-12 object-cover rounded" />
+                      <div>
+                        <h3 className="text-lg font-bold text-white">{order.product?.name}</h3>
+                        <p className="text-gray-400 text-sm">ID: {order.orderId} • {order.date}</p>
+                      </div>
                     </div>
                     <button onClick={() => trackOrder(order)} className="border border-[#FFC107] text-[#FFC107] px-4 py-2 rounded">Track Parcel</button>
                   </div>
@@ -420,7 +393,6 @@ const App = () => {
           </div>
         )}
 
-        {/* --- VIEW: PARCEL TRACKING --- */}
         {currentView === 'tracking' && selectedOrder && (
           <div className="max-w-3xl mx-auto mt-4 sm:mt-8">
             <button onClick={() => setCurrentView('orders')} className="text-gray-400 hover:text-white mb-6">← Back to Orders</button>
@@ -432,11 +404,8 @@ const App = () => {
           </div>
         )}
 
-        {/* --- VIEW: ADMIN DASHBOARD --- */}
         {currentView === 'admin' && userRole === 'admin' && (
           <div className="max-w-6xl mx-auto mt-4 sm:mt-8 grid grid-cols-1 md:grid-cols-2 gap-8">
-            
-            {/* Upload Product Panel */}
             <div className="bg-[#2a2a35] p-6 sm:p-8 rounded-xl shadow-lg border border-gray-700 h-fit">
               <h2 className="text-xl sm:text-2xl font-bold font-['Poppins'] mb-2 text-[#FFC107]">Upload Catalog Item</h2>
               <form onSubmit={handleUploadSubmit} className="space-y-4">
@@ -447,20 +416,18 @@ const App = () => {
                 {imagePreview && <img src={imagePreview} alt="Preview" className="max-h-32 object-contain rounded" />}
                 <button type="submit" className="w-full bg-[#FFC107] text-black font-bold py-3 rounded">Save to Catalog</button>
               </form>
-
               <div className="mt-6 pt-6 border-t border-gray-700">
                 <button onClick={handleChangeAdminPassword} className="w-full bg-gray-700 text-white font-bold py-2 rounded hover:bg-gray-600">Change Admin Password</button>
               </div>
             </div>
 
-            {/* Manage Existing Products (Edit Price / Delete) */}
             <div className="bg-[#2a2a35] p-6 sm:p-8 rounded-xl shadow-lg border border-gray-700 h-fit">
               <h2 className="text-xl sm:text-2xl font-bold font-['Poppins'] mb-2 text-[#FFC107]">Manage Products</h2>
               <div className="space-y-4 max-h-[450px] overflow-y-auto">
                 {products.map(product => (
                   <div key={product.id} className="bg-[#1e1e28] p-4 rounded-lg border border-gray-600 flex justify-between items-center">
                     <div className="flex items-center gap-3">
-                      <img src={`https://glowence-backend.onrender.com${product.image}`} alt={product.name} className="w-10 h-10 object-cover rounded" />
+                      <img src={product.image.startsWith('http') ? product.image : `${BACKEND_URL}${product.image}`} alt="" className="w-10 h-10 object-cover rounded" />
                       <div>
                         <h4 className="text-white font-bold text-sm">{product.name}</h4>
                         <span className="text-[#FFC107] text-xs font-bold">{product.price}</span>
@@ -474,13 +441,10 @@ const App = () => {
                 ))}
               </div>
             </div>
-
           </div>
         )}
-
       </main>
 
-      {/* --- SECURE PAYMENT MODAL --- */}
       {showPaymentModal && selectedProduct && (
         <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4">
           <div className="bg-[#2a2a35] max-w-md w-full rounded-2xl shadow-2xl border border-gray-600 p-6">
@@ -488,11 +452,28 @@ const App = () => {
             <p className="text-[#FFC107] font-bold mb-4">{selectedProduct.name} - {selectedProduct.price}</p>
             {paymentStatus === 'idle' && (
               <form onSubmit={handlePaymentSubmit}>
-                <button type="submit" className="w-full bg-[#FFC107] text-black font-bold py-3 rounded">Pay Now</button>
+                <label className="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">Select UPI App</label>
+                <div className="grid grid-cols-3 gap-3 mb-6">
+                  <button type="button" onClick={() => setSelectedUpiApp('gpay')} className={`flex flex-col items-center p-3 rounded-xl border ${selectedUpiApp === 'gpay' ? 'border-[#FFC107] bg-[#FFC107] bg-opacity-10' : 'border-gray-600 bg-[#1e1e28]'}`}>
+                    <span className="text-lg mb-1">G</span><span className="text-xs text-gray-200">GPay</span>
+                  </button>
+                  <button type="button" onClick={() => setSelectedUpiApp('phonepe')} className={`flex flex-col items-center p-3 rounded-xl border ${selectedUpiApp === 'phonepe' ? 'border-[#FFC107] bg-[#FFC107] bg-opacity-10' : 'border-gray-600 bg-[#1e1e28]'}`}>
+                    <span className="text-lg mb-1 text-purple-500">पे</span><span className="text-xs text-gray-200">PhonePe</span>
+                  </button>
+                  <button type="button" onClick={() => setSelectedUpiApp('paytm')} className={`flex flex-col items-center p-3 rounded-xl border ${selectedUpiApp === 'paytm' ? 'border-[#FFC107] bg-[#FFC107] bg-opacity-10' : 'border-gray-600 bg-[#1e1e28]'}`}>
+                    <span className="text-lg mb-1 text-blue-400">P</span><span className="text-xs text-gray-200">Paytm</span>
+                  </button>
+                </div>
+                <button type="submit" className="w-full bg-[#FFC107] text-black font-bold py-3 rounded hover:bg-yellow-400">Pay {selectedProduct.price}</button>
               </form>
             )}
-            {paymentStatus === 'processing' && <p className="text-white text-center">Processing payment...</p>}
-            {paymentStatus === 'success' && <p className="text-green-400 text-center font-bold">Payment Successful!</p>}
+            {paymentStatus === 'processing' && (
+              <div className="text-center py-6">
+                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#FFC107] mx-auto mb-3"></div>
+                <p className="text-white font-bold">Redirecting to UPI App...</p>
+              </div>
+            )}
+            {paymentStatus === 'success' && <p className="text-green-400 text-center font-bold py-6">Payment Successful!</p>}
           </div>
         </div>
       )}
