@@ -7,7 +7,7 @@ const App = () => {
   const [customerInfo, setCustomerInfo] = useState(null);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [selectedOrder, setSelectedOrder] = useState(null);
-  const [adminPassword, setAdminPassword] = useState('1234'); // Customizable password state
+  const [adminPassword, setAdminPassword] = useState('1234');
 
   // Dynamic Products State (Catalog)
   const [products, setProducts] = useState([
@@ -67,16 +67,15 @@ const App = () => {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState('idle'); 
   const [paymentMethod, setPaymentMethod] = useState('upi'); 
-  const [selectedUpiApp, setSelectedUpiApp] = useState('gpay'); 
 
   // --- BACKEND API SYNCHRONIZATION ---
   useEffect(() => {
-    fetch('http://localhost:5000/api/products')
+    fetch('https://glowence-backend.onrender.com/api/products')
       .then(res => res.json())
       .then(data => { if (data.length > 0) setProducts(data); })
       .catch(err => console.log('Error fetching products:', err));
 
-    fetch('http://localhost:5000/api/orders')
+    fetch('https://glowence-backend.onrender.com/api/orders')
       .then(res => res.json())
       .then(data => { if (data.length > 0) setOrders(data); })
       .catch(err => console.log('Error fetching orders:', err));
@@ -126,7 +125,7 @@ const App = () => {
     formData.append('description', productDescription);
     formData.append('image', imageFile);
 
-    fetch('http://localhost:5000/api/products', {
+    fetch('https://glowence-backend.onrender.com/api/products', {
       method: 'POST',
       body: formData
     })
@@ -145,7 +144,7 @@ const App = () => {
 
   const handleDeleteProduct = (productId) => {
     if (window.confirm("Are you sure you want to delete this product?")) {
-      fetch(`http://localhost:5000/api/products/${productId}`, {
+      fetch(`https://glowence-backend.onrender.com/api/products/${productId}`, {
         method: 'DELETE'
       })
       .then(res => res.json())
@@ -160,7 +159,7 @@ const App = () => {
   const handleUpdatePrice = (productId) => {
     const newPrice = window.prompt("Enter new price:");
     if (newPrice) {
-      fetch(`http://localhost:5000/api/products/${productId}`, {
+      fetch(`https://glowence-backend.onrender.com/api/products/${productId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ price: newPrice })
@@ -180,22 +179,6 @@ const App = () => {
       setAdminPassword(newPass);
       alert("Admin password updated successfully!");
     }
-  };
-
-  const exportToExcel = () => {
-    const headers = ['Order ID', 'Product Name', 'Price', 'Order Date', 'Status', 'Current Location', 'Expected Delivery'];
-    const csvRows = orders.map(order => [
-      order.orderId, `"${order.product.name}"`, `"${order.product.price}"`, `"${order.date}"`, order.status, `"${order.location}"`, `"${order.expectedDelivery}"`
-    ]);
-    const csvContent = [headers.join(','), ...csvRows.map(row => row.join(','))].join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', 'Glowence_Store_Orders.csv');
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
   };
 
   // --- CUSTOMER FUNCTIONS ---
@@ -245,7 +228,7 @@ const App = () => {
       customer: customerInfo?.name || 'guest'
     };
 
-    fetch('http://localhost:5000/api/orders', {
+    fetch('https://glowence-backend.onrender.com/api/orders', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(newOrder)
@@ -269,20 +252,6 @@ const App = () => {
         setCurrentView('orders');
       }, 1500);
     }, 4000);
-  };
-
-  const getSuggestedProducts = () => {
-    if (!selectedProduct) return [];
-    return products.filter(p => p.id !== selectedProduct.id).slice(0, 4); 
-  };
-
-  const trackingSteps = ['Order Placed', 'Packed', 'Shipped', 'Out for Delivery', 'Delivered'];
-  const getStepStatus = (currentStatus, stepName) => {
-    const currentIndex = trackingSteps.indexOf(currentStatus);
-    const stepIndex = trackingSteps.indexOf(stepName);
-    if (stepIndex < currentIndex) return 'completed';
-    if (stepIndex === currentIndex) return 'current';
-    return 'pending';
   };
 
   return (
@@ -335,18 +304,9 @@ const App = () => {
         {/* --- VIEW: ABOUT US --- */}
         {currentView === 'about' && (
           <div className="max-w-4xl mx-auto mt-8 bg-[#2a2a35] p-8 rounded-xl shadow-lg border border-gray-700">
-            <h2 className="text-3xl font-bold font-['Poppins'] text-white mb-6">Architectural Lighting Supply for Your Projects </h2>
+            <h2 className="text-3xl font-bold font-['Poppins'] text-white mb-6">About Glowence</h2>
             <p className="text-gray-300 leading-relaxed mb-4">
-            Glowence Lighting Solutions transforms spaces
-into experiences with precision-crafted, high-
-performance lighting designs. We combine
-aesthetics, energy efficiency, and cutting-edge
-technology to deliver lighting that elevates every
-project. From concept to installation, our team
-ensures seamless execution tailored to architects,
-builders, and premium clients. With Glowence,
-you don’t just light a space—you define its mood,
-value, and impact.
+              Founded in 2026, Glowence Lighting is dedicated to bringing world-class, contemporary lighting fixtures right to your doorstep. We believe that lighting isn't just functional—it is the soul of interior design.
             </p>
           </div>
         )}
@@ -377,7 +337,7 @@ value, and impact.
               {products.map((product) => (
                 <div key={product.id} onClick={() => viewProduct(product)} className="bg-black bg-opacity-20 rounded-lg overflow-hidden border border-gray-700 group cursor-pointer hover:border-[#FFC107] transition-all duration-300 flex flex-col">
                   <div className="h-56 overflow-hidden relative">
-                    <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                    <img src={`https://glowence-backend.onrender.com${product.image}`} alt={product.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                   </div>
                   <div className="p-4 text-center flex-1 flex flex-col justify-between">
                     <h4 className="text-sm font-['Poppins'] font-semibold text-gray-200">{product.name}</h4>
@@ -398,7 +358,7 @@ value, and impact.
             <button onClick={() => setCurrentView('catalog')} className="text-gray-400 hover:text-white mb-6 flex items-center gap-2">← Back to Catalog</button>
             <div className="bg-[#2a2a35] rounded-xl overflow-hidden shadow-lg border border-gray-700 flex flex-col md:flex-row">
               <div className="md:w-1/2">
-                <img src={selectedProduct.image} alt={selectedProduct.name} className="w-full h-full object-cover min-h-[300px]" />
+                <img src={`https://glowence-backend.onrender.com${selectedProduct.image}`} alt={selectedProduct.name} className="w-full h-full object-cover min-h-[300px]" />
               </div>
               <div className="md:w-1/2 p-6 sm:p-8 flex flex-col justify-between">
                 <div>
@@ -500,7 +460,7 @@ value, and impact.
                 {products.map(product => (
                   <div key={product.id} className="bg-[#1e1e28] p-4 rounded-lg border border-gray-600 flex justify-between items-center">
                     <div className="flex items-center gap-3">
-                      <img src={product.image} alt={product.name} className="w-10 h-10 object-cover rounded" />
+                      <img src={`https://glowence-backend.onrender.com${product.image}`} alt={product.name} className="w-10 h-10 object-cover rounded" />
                       <div>
                         <h4 className="text-white font-bold text-sm">{product.name}</h4>
                         <span className="text-[#FFC107] text-xs font-bold">{product.price}</span>
